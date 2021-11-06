@@ -3,114 +3,24 @@
 
 #include "pch.h"
 #include <iostream>
+#include "vectorclass.h"
+#include "areaclass.h"
+#include "functionclass.h"
+#include "optimizationmethods.h"
 
-class Vector
-{
-	double *values;
-public:
-	unsigned short dim;
-
-	Vector(unsigned short dim) : dim(dim), values(new double[dim])
-	{
-		for (int i = 0; i < dim; ++i)
-			this->values[i] = 0;
-	}
-	Vector(const double *values, unsigned short dim) : dim(dim), values(new double[dim])
-	{
-		for (int i = 0; i < dim; ++i)
-			this->values[i] = values[i];
-	}
-	Vector(const Vector &src) : dim(src.dim), values(new double[dim])
-	{
-		for (int i = 0; i < dim; ++i)
-			values[i] = src.values[i];
-	}
-
-	const double operator [] (const int i) const
-	{
-		return values[i];
-	}
-
-	double& operator [] (const int i)
-	{
-		return values[i];
-	}
-
-	double dot(const Vector &right)
-	{
-		double res = 0;//здесь нужно обработать равенство размерностей
-		for (int i = 0; i < dim; ++i)
-			res += values[i] * right[i];
-		return res;
-	}
-
-	double operator *(const Vector &right)
-	{
-		return dot(right); 
-	}
-
-	Vector& sum(const Vector &right)
-	{
-		//здесь нужно обработать равенство размерностей
-		Vector res(dim);
-		for (int i = 0; i < dim; ++i)
-			res[i] = values[i] + right[i];
-		return res;
-	}
-
-	Vector& operator +(const Vector &right)
-	{
-		return sum(right);
-	}
-
-	Vector& subtraction(const Vector &right)
-	{
-		//здесь нужно обработать равенство размерностей
-		Vector res(dim);
-		for (int i = 0; i < dim; ++i)
-			res[i] = values[i] - right[i];
-		return res;
-	}
-
-	Vector& operator -(const Vector &right)
-	{
-		return subtraction(right);
-	}
-
-	~Vector()
-	{
-		dim = 0;
-		delete[] values;
-	}
-};
-
-
-class Function
-{
-protected:
-	const unsigned int dim;
-
-	Function(const unsigned int dim) : dim(dim) {};
-
-	virtual double expression() = 0;
-	virtual Vector gradient() = 0;
-	virtual ~Function();
-};
+using namespace std;
 
 class function1 : public Function
 {
+public:
 	function1(const unsigned int dim) : Function(dim) {};
 
-	double expression(const double *x)
+	double expression(const Vector &x) const override
 	{
 		return x[0]*x[0] + x[1]*x[1];
 	}
-	double operator ()(const double *x)
-	{
-		return expression(x);
-	}
 
-	Vector gradient(const Vector &x)
+	const Vector gradient(const Vector &x) const override
 	{
 		Vector grad(x.dim);
 		grad[0] = 2 * x[0];
@@ -119,31 +29,44 @@ class function1 : public Function
 	}
 };
 
-class OptimizationMethod
+class Rosenbrock : public Function
 {
-	virtual void optimize() = 0;
-};
+public:
+	Rosenbrock(const unsigned int dim) : Function(dim) {};
 
-class RibierePolak : public OptimizationMethod
-{
-	void optimize(const Function &func)
+	double expression(const Vector &x) const override
 	{
+		double a = 1 - x[0];
+		double b = x[1] - x[0] * x[0];
+		return a*a + 100*b*b;
+	}
 
+	const Vector gradient(const Vector &x) const override
+	{
+		Vector grad(x.dim);
+		double a = x[1] - x[0] * x[0];
+		grad[0] = 2 *(x[0] - 1 - 200*x[0]*a);
+		grad[1] = 200 * a;
+		return grad;
 	}
 };
 
+
 int main()
 {
-    std::cout << "Hello World!\n";
+	Rosenbrock func(2);
+	double a[2]{ 0, 0 };
+	double b[2]{ -1, -1 };
+	double c[2]{ 1, 1 };
+
+	Vector init(a, 2);
+	Vector left(b, 2);
+	Vector right(c, 2);
+	Parallelepiped area(left, right);
+
+	RibierePolak optimizer(1e-3, 100);
+	Vector res = optimizer.optimize(func, area, init);
+	std::cout << optimizer.optimal_value << std::endl;
+	return 0;
 }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source controlw
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
