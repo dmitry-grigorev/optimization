@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <iostream>
 
 class Vector
 {
@@ -29,9 +30,11 @@ public:
 
 	Vector& operator = (const Vector &right)
 	{
-		//if (dim != right.dim) throw length_error("Operands differ in dimentionality!");
 		if (values.size() != right.dim)
+		{
 			values.resize(right.dim);
+			dim = right.dim;
+		}
 		for (int i = 0; i < dim; ++i)
 			values[i] = right.values[i];
 		return *this;
@@ -89,6 +92,16 @@ public:
 	{
 		dim = newsize;
 		values.resize(dim);
+	}
+
+	friend std::ostream& operator<<(std::ostream& os, const Vector& v)
+	{
+		os << "(";
+		for (int i = 0; i < v.dim - 1; ++i)
+			os << v.values[i] << ", ";
+		os << v.values[v.dim - 1];
+		os << ")";
+		return os;
 	}
 
 	~Vector()

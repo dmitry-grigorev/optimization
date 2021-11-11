@@ -3,10 +3,9 @@
 
 class Area
 {
-	virtual bool contain(const Vector &x) = 0;
-	virtual bool contain(const double x) = 0;
-
 public:
+	virtual bool contain(const Vector &x) const = 0;
+	virtual bool contain(const double x) const = 0;
 	virtual ~Area() {};
 };
 
@@ -20,8 +19,8 @@ public:
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits, const unsigned int dim) : left_limits(left_limits), right_limits(right_limits), dim(dim) {};
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits) : left_limits(left_limits), right_limits(right_limits), dim(left_limits.dim) {};
 
-	bool contain(const double x) override final { return false; }
-	bool contain(const Vector &x) override
+	bool contain(const double x) const override final { return false; }
+	bool contain(const Vector &x) const override
 	{
 		for (int i = 0; i < dim; ++i)
 			if (left_limits[i] > x[i] || right_limits[i] < x[i])
@@ -39,8 +38,8 @@ public:
 	const double right_limit;
 	Segment(const double left_limit, const double right_limit) : left_limit(left_limit), right_limit(right_limit) {};
 
-	bool contain(const Vector &x) override final { return false; }
-	bool contain(const double x)
+	bool contain(const Vector &x) const override final { return false; }
+	bool contain(const double x) const
 	{
 		return left_limit < x && x < right_limit;
 	}

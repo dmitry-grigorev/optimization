@@ -56,17 +56,17 @@ int main()
 {
 	Rosenbrock func(2);
 	double a[2]{ 0, 0 };
-	double b[2]{ -1, -1 };
-	double c[2]{ 1, 1 };
+	double b[2]{ -3, -3 };
+	double c[2]{ 3, 3 };
 
 	Vector init(a, 2);
 	Vector left(b, 2);
 	Vector right(c, 2);
 	Parallelepiped area(left, right);
 
-	RibierePolak optimizer(1e-3, 100);
-	Vector res = optimizer.optimize(func, area, init);
-	std::cout << optimizer.optimal_value << std::endl;
+	RibierePolak optimizer(1e-3, 1000);
+	OptMethodSolution<Vector> res = optimizer.optimize(func, area, init);
+	std::cout << res.argmin << std::endl<< res.value << std::endl << res.iter << std::endl;
 	return 0;
 }
 

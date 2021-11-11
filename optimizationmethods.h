@@ -4,6 +4,18 @@
 #include "functionclass.h"
 using namespace std;
 
+const double GOLDENRATIO = 1.61803398875;
+const Segment UNITSEGMENT(0, 1);
+
+
+template <typename T>
+struct OptMethodSolution
+{
+	double value;
+	T argmin;
+	unsigned int iter;
+};
+
 class StopCriterionPars
 {
 public:
@@ -23,6 +35,17 @@ public:
 	const Vector& getpoint() const { return point; }
 };
 
+class NeighborCritPars : public StopCriterionPars
+{
+	Vector first;
+	Vector second;
+public:
+	NeighborCritPars(const Vector &first, const Vector &second) : first(first), second(second) {};
+	NeighborCritPars(const NeighborCritPars& pars) : first(pars.first), second(pars.second) {};
+	const Vector& getfirst() const { return first; }
+	const Vector& getsecond() const { return second; }
+};
+
 class StopCriterion
 {
 protected:
@@ -38,6 +61,14 @@ public:
 	GradientCrit(const double tol) : StopCriterion(tol) {};
 	bool satisfy(const StopCriterionPars& pars) const override final;
 	bool satisfy(const Function& func, const Vector& vector) { return satisfy(GradientCritPars(func, vector)); }
+};
+
+class NeighborCrit : public StopCriterion
+{
+public:
+	NeighborCrit(const double tol) : StopCriterion(tol) {};
+	bool satisfy(const StopCriterionPars& pars) const override final;
+	bool satisfy(const Vector& first, const Vector& second) { return satisfy(NeighborCritPars(first, second)); }
 };
 
 class OptMethodPars
@@ -81,7 +112,7 @@ public:
 	double optimal_value;
 
 	OptimizationMethod(const double eps, const unsigned int maxiter = 100) : tol(eps), maxiter(maxiter) {};
-	virtual Vector& optimize(const Function& func, const Area &area, const OptMethodPars &pars) = 0;
+	virtual OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) = 0;
 	
 	virtual ~OptimizationMethod() {};
 };
@@ -92,11 +123,25 @@ public:
 	double optimal_x;
 
 	MultiDimLinearSearch(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
-	Vector& optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
-	Vector optimize(const Function& func, const Area &area, const Vector &pivot, const Vector &dir) { return optimize(func, area, MDLSPars(pivot, dir)); }
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &pivot, const Vector &dir) { return optimize(func, area, MDLSPars(pivot, dir)); }
 
-	~MultiDimLinearSearch() {};
+	virtual ~MultiDimLinearSearch() {};
 };
+
+
+class MultiDimGoldRatio : public OptimizationMethod
+{
+public:
+	double optimal_x;
+
+	MultiDimGoldRatio(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &pivot, const Vector &dir) { return optimize(func, area, MDLSPars(pivot, dir)); }
+
+	virtual ~MultiDimGoldRatio() {};
+};
+
 
 class RibierePolak : public OptimizationMethod
 {
@@ -104,8 +149,8 @@ class RibierePolak : public OptimizationMethod
 public:
 	RibierePolak(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
 
-	Vector& optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
-	virtual Vector optimize(const Function& func, const Area &area, const Vector &init) { return optimize(func, area, RibPolPars(init)); }
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &init) { return optimize(func, area, RibPolPars(init)); }
 
 	~RibierePolak() {};
 };
