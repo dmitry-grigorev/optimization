@@ -3,8 +3,6 @@
 
 class Function
 {
-//	Vector lastpoint;
-
 public:
 	const unsigned int dim;
 
@@ -16,4 +14,20 @@ public:
 
 	virtual const Vector gradient(const Vector &) const = 0;
 	virtual ~Function() {};
+};
+
+class FunctionCrossed//класс функций, которые считают значение векторной функций с заданной опорной точкой в заданном направлении
+{
+	const Function &func;
+	Vector pivot;
+	Vector dir;
+public:
+	FunctionCrossed(const Function &func) : func(func) {};
+	void setpivot(const Vector &pivot) { this->pivot = pivot; }
+	void setdir(const Vector &dir) { this->dir = dir; }
+
+	double operator ()(const double x) const { return func(pivot + dir * x); }
+
+
+	virtual ~FunctionCrossed() {};
 };

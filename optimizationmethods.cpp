@@ -25,6 +25,11 @@ bool NeighborCrit::satisfy(const StopCriterionPars& pars) const
 	return (first - second).scalar_square() < tol*tol;
 }
 
+bool LastImproveCrit::satisfy(const StopCriterionPars& pars) const
+{
+	return count > maximprovenumber;
+}
+
 OptMethodSolution<Vector> MultiDimLinearSearch::optimize(const Function& func, const Area &area, const OptMethodPars &pars)
 {
 	const MDLSPars &params = dynamic_cast<const MDLSPars&>(pars);
@@ -33,13 +38,16 @@ OptMethodSolution<Vector> MultiDimLinearSearch::optimize(const Function& func, c
 	const Vector &pivot = params.getPivot();
 	const Vector &dir = params.getDirection();
 
+	FunctionCrossed funccr(func);
+	funccr.setdir(dir);
+	funccr.setpivot(pivot);
+
 	double opt_x = segm.left_limit;
 	Vector opt_point = pivot + dir * opt_x;
 	double opt_value = func(opt_point);
 
 	double curr_x = opt_x + tol;
-	Vector curr_point = opt_point + dir * tol;
-	double curr_value = func(curr_point);
+	double curr_value = funccr(curr_x);
 
 	while (curr_x < segm.right_limit)
 	{
@@ -47,17 +55,16 @@ OptMethodSolution<Vector> MultiDimLinearSearch::optimize(const Function& func, c
 		{
 			opt_value = curr_value;
 			opt_x = curr_x;
-			opt_point = curr_point;
 		}
-		curr_point = curr_point + dir * tol;
 		curr_x += tol;
-		curr_value = func(curr_point);
+		curr_value = funccr(curr_x);
 	}
 
 	optimal_x = opt_x;
 	optimal_value = opt_value;
+	opt_point = pivot + dir * optimal_x;
 
-	return OptMethodSolution<Vector>{optimal_value, pivot + dir * opt_x, 0};
+	return OptMethodSolution<Vector>{optimal_value, opt_point, 0};
 }
 
 OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, const Area &area, const OptMethodPars &pars)
@@ -67,15 +74,18 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 	const Segment &segm = dynamic_cast<const Segment&>(area);
 	const Vector &pivot = params.getPivot();
 	const Vector &dir = params.getDirection();
+
+	FunctionCrossed funccr(func);
+	funccr.setdir(dir);
+	funccr.setpivot(pivot);
+
 	const double left = segm.left_limit;
 	const double right = segm.right_limit;
 	const double part = 10*tol*(right - left); // шаг деления на секции
 
-
 	double curr_lborder = left, curr_rborder = curr_lborder + part;
 	double curr_left = curr_lborder, curr_right = curr_rborder, curr_diff;
 	double curr_nleft, curr_nright;
-	Vector curr_nvleft, curr_nvright;
 	double curr_x, curr_v = 0, opt_value = func(pivot), opt_x = 0;
 	Vector opt_point = pivot, curr_point;
 
@@ -87,11 +97,9 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 		curr_diff = curr_right - curr_left;
 		curr_nleft = curr_left;
 		curr_nright = curr_right;
-		curr_nvleft = pivot + dir * curr_nleft;
-		curr_nvright = pivot + dir * curr_nright;
 
-		curr_lvalue = func(curr_nvleft);
-		curr_rvalue = func(curr_nvright);
+		curr_lvalue = funccr(curr_nleft);
+		curr_rvalue = funccr(curr_nright);
 
 		while (curr_diff > tol)
 		{
@@ -101,8 +109,7 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 				curr_diff = curr_right - curr_left;
 
 				curr_nright = curr_left + curr_diff / GOLDENRATIO;
-				curr_nvright = pivot + dir * curr_nright;
-				curr_rvalue = func(curr_nvright);
+				curr_rvalue = funccr(curr_nright);
 			}
 			else
 			{
@@ -110,18 +117,15 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 				curr_diff = curr_right - curr_left;
 
 				curr_nleft = curr_right - curr_diff / GOLDENRATIO;
-				curr_nvleft = pivot + dir * curr_nleft;
-				curr_lvalue = func(curr_nvleft);
+				curr_lvalue = funccr(curr_nleft);
 			}
 		}
 
 		curr_x = (curr_left + curr_right) / 2;
-		curr_point = pivot + dir * curr_x;
-		curr_v = func(curr_point);
+		curr_v = funccr(curr_x);
 		if (curr_v < opt_value)
 		{
 			opt_value = curr_v;
-			opt_point = curr_point;
 			opt_x = curr_x;
 		}
 		curr_lborder = curr_rborder;
@@ -131,6 +135,7 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 	}
 	optimal_x = opt_x;
 	optimal_value = opt_value;
+	opt_point = pivot + dir * optimal_x;
 
 	return OptMethodSolution<Vector>{optimal_value, opt_point, 0};
 }
@@ -177,12 +182,16 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 	const RSPars &params = dynamic_cast<const RSPars&>(pars);
 	const double p = params.getp();
 	const double alpha = params.getalpha();
+	const unsigned int lastimprovenumber = params.getlin();
 
 	Vector optpoint = prlp.getleftlimits(), currpoint;
 	double optvalue = func(optpoint), currvalue, beta;
 	double delta = 1;
 	unsigned int iter = 0;
-	while (iter < maxiter)
+
+	LastImproveCrit crit(lastimprovenumber);
+
+	while (!crit.satisfy() && iter < maxiter)
 	{
 		beta = UNIFORMDIST(generator);
 		if (beta < p)
@@ -201,7 +210,10 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 			optvalue = currvalue;
 			if (alpha > p)
 				delta *= alpha;
+			crit.count = 0;
 		}
+		else
+			++crit.count;
 		++iter;
 	}
 	optimal_value = optvalue;

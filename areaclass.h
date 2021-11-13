@@ -9,13 +9,13 @@ class Area
 {
 public:
 	virtual bool contain(const Vector &x) const = 0;
-	virtual bool contain(const double x) const = 0;
 	virtual ~Area() {};
 };
 
 class Parallelepiped : public Area
 {
 	const unsigned int dim;
+protected:
 	const Vector left_limits;
 	const Vector right_limits;
 public:
@@ -25,7 +25,6 @@ public:
 
 	Vector getleftlimits() const { return left_limits; }
 
-	bool contain(const double x) const override final { return false; }
 	bool contain(const Vector &x) const override
 	{
 		for (int i = 0; i < dim; ++i)
@@ -40,18 +39,20 @@ public:
 	~Parallelepiped() {};
 };
 
-class Segment : public Area
+class Segment : public Parallelepiped
 {
 public:
-	const double left_limit;
-	const double right_limit;
-	Segment(const double left_limit, const double right_limit) : left_limit(left_limit), right_limit(right_limit) {};
+	const double &left_limit;
+	const double &right_limit;
+	Segment(const double left_limit, const double right_limit) : Parallelepiped(Vector(left_limit), Vector(right_limit), 1), 
+																 left_limit(left_limits[0]), right_limit(right_limits[0]){};
 
-	bool contain(const Vector &x) const override final { return false; }
 	bool contain(const double x) const
 	{
 		return left_limit < x && x < right_limit;
 	}
+
+	double getrandompoint() const { return Parallelepiped::getrandompoint()[0]; }
 
 	~Segment() {};
 };

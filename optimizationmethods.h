@@ -51,7 +51,9 @@ class StopCriterion
 {
 protected:
 	double tol;
+	unsigned int maximprovenumber;
 	StopCriterion(const double tol) : tol(tol) {};
+	StopCriterion(const unsigned int n) : maximprovenumber(n) {};
 public:
 	virtual bool satisfy(const StopCriterionPars&) const = 0;
 };
@@ -70,6 +72,15 @@ public:
 	NeighborCrit(const double tol) : StopCriterion(tol) {};
 	bool satisfy(const StopCriterionPars& pars) const override final;
 	bool satisfy(const Vector& first, const Vector& second) { return satisfy(NeighborCritPars(first, second)); }
+};
+
+class LastImproveCrit : public StopCriterion
+{
+public:
+	unsigned int count;
+	LastImproveCrit(const unsigned int n): count(0), StopCriterion(n) {};
+	bool satisfy(const StopCriterionPars& pars) const override final;
+	bool satisfy() { return satisfy(StopCriterionPars()); }
 };
 
 class OptMethodPars
@@ -108,13 +119,15 @@ class RSPars : public OptMethodPars
 {
 	double p;
 	double alpha;
+	unsigned int lastimprovenumber;
 public:
-	RSPars(const double p, const double alpha) : p(p), alpha(alpha) {};
-	RSPars(const RSPars &pars) :p(pars.p), alpha(pars.alpha) {};
-	RSPars(const RSPars &&pars) :p(move(pars.p)), alpha(move(pars.alpha)) {};
+	RSPars(const double p, const double alpha, const unsigned int lastimprovenumber) : p(p), alpha(alpha), lastimprovenumber(lastimprovenumber) {};
+	RSPars(const RSPars &pars) :p(pars.p), alpha(pars.alpha), lastimprovenumber(pars.lastimprovenumber){};
+	RSPars(const RSPars &&pars) :p(move(pars.p)), alpha(move(pars.alpha)), lastimprovenumber(move(pars.lastimprovenumber)) {};
 
 	const double getp() const { return p; }
 	const double getalpha() const { return alpha; }
+	const unsigned int getlin() const { return lastimprovenumber; }
 };
 
 class OptimizationMethod
@@ -175,6 +188,6 @@ public:
 	RandomSearch(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
 
 	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
-	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const double p, const double alpha) { return optimize(func, area, RSPars(p, alpha)); }
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const double p, const double alpha, const unsigned int maximprovenumber) { return optimize(func, area, RSPars(p, alpha, maximprovenumber)); }
 	~RandomSearch() {};
 };

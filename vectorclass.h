@@ -6,10 +6,10 @@ class Vector
 {
 	std::vector<double> values;
 public:
-	unsigned short dim;
+	unsigned int dim;
 
 	Vector() = default;
-	explicit Vector(unsigned short dim) :dim(dim) { values.resize(dim); }
+	explicit Vector(unsigned int dim) :dim(dim) { values.resize(dim); }
 
 	Vector(const double *values, unsigned short dim) : dim(dim)
 	{
@@ -17,6 +17,8 @@ public:
 		for (int i = 0; i < dim; ++i)
 			this->values[i] = values[i];
 	}
+
+	explicit Vector(const double value) : dim(1) { values.resize(1, value); }
 
 	Vector(const Vector &src) : dim(src.dim)
 	{
