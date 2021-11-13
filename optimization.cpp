@@ -64,8 +64,10 @@ int main()
 	Vector right(c, 2);
 	Parallelepiped area(left, right);
 
-	RibierePolak optimizer(1e-3, 1000);
-	OptMethodSolution<Vector> res = optimizer.optimize(func, area, init);
+	//RibierePolak optimizer(1e-3, 1000);
+	//OptMethodSolution<Vector> res = optimizer.optimize(func, area, init);
+	RandomSearch optimizer(1e-3, 10000);
+	OptMethodSolution<Vector> res = optimizer.optimize(func, area, 0.7, 0.4);
 	std::cout << res.argmin << std::endl<< res.value << std::endl << res.iter << std::endl;
 	return 0;
 }

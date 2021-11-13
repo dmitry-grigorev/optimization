@@ -74,11 +74,27 @@ public:
 		return sum(right);
 	}
 
+	Vector operator +(const double &a) const
+	{
+		Vector res(*this);
+		for (int i = 0; i < dim; ++i)
+			res[i] += a;
+		return res;
+	}
+
 	Vector subtraction(const Vector &right) const;
 
 	Vector operator -(const Vector &right) const
 	{
 		return subtraction(right);
+	}
+
+	Vector operator -(const double &a) const
+	{
+		Vector res(*this);
+		for (int i = 0; i < dim; ++i)
+			res[i] -= a;
+		return res;
 	}
 
 	Vector multOnScalar(const double a) const;

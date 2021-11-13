@@ -1,4 +1,5 @@
 #pragma once
+#include <random>
 #include "vectorclass.h"
 #include "areaclass.h"
 #include "functionclass.h"
@@ -96,11 +97,24 @@ class MDLSPars : public OptMethodPars
 	Vector dir;
 public:
 	MDLSPars(const Vector &pivot, const Vector &dir): pivot(pivot), dir(dir) {};
-	MDLSPars(const MDLSPars& pars) : pivot(pars.pivot), dir(pars.dir) {};
-	MDLSPars(const MDLSPars&& pars) : pivot(move(pars.pivot)), dir(move(pars.dir)) {};
-public:
+	MDLSPars(const MDLSPars &pars) : pivot(pars.pivot), dir(pars.dir) {};
+	MDLSPars(const MDLSPars &&pars) : pivot(move(pars.pivot)), dir(move(pars.dir)) {};
+
 	const Vector& getPivot() const { return pivot; }
 	const Vector& getDirection() const { return dir; }
+};
+
+class RSPars : public OptMethodPars
+{
+	double p;
+	double alpha;
+public:
+	RSPars(const double p, const double alpha) : p(p), alpha(alpha) {};
+	RSPars(const RSPars &pars) :p(pars.p), alpha(pars.alpha) {};
+	RSPars(const RSPars &&pars) :p(move(pars.p)), alpha(move(pars.alpha)) {};
+
+	const double getp() const { return p; }
+	const double getalpha() const { return alpha; }
 };
 
 class OptimizationMethod
@@ -153,4 +167,14 @@ public:
 	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &init) { return optimize(func, area, RibPolPars(init)); }
 
 	~RibierePolak() {};
+};
+
+class RandomSearch : public OptimizationMethod
+{
+public:
+	RandomSearch(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
+
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const double p, const double alpha) { return optimize(func, area, RSPars(p, alpha)); }
+	~RandomSearch() {};
 };

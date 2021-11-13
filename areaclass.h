@@ -1,5 +1,9 @@
 #pragma once
 #include "vectorclass.h"
+#include <math.h>
+#include <random>
+
+const unsigned int SEED = 1912;
 
 class Area
 {
@@ -15,9 +19,11 @@ class Parallelepiped : public Area
 	const Vector left_limits;
 	const Vector right_limits;
 public:
-	Parallelepiped() = default;
+	Parallelepiped() : dim(0) {}; //пустое множество
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits, const unsigned int dim) : left_limits(left_limits), right_limits(right_limits), dim(dim) {};
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits) : left_limits(left_limits), right_limits(right_limits), dim(left_limits.dim) {};
+
+	Vector getleftlimits() const { return left_limits; }
 
 	bool contain(const double x) const override final { return false; }
 	bool contain(const Vector &x) const override
@@ -27,6 +33,9 @@ public:
 				return false;
 		return true;
 	}
+
+	Parallelepiped intercept(const Parallelepiped &right) const;
+	Vector getrandompoint() const;
 
 	~Parallelepiped() {};
 };

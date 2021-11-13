@@ -3,6 +3,10 @@
 #include "optimizationmethods.h"
 #include "areaclass.h"
 
+std::mt19937 generator(SEED);
+std::uniform_real_distribution<double> UNIFORMDIST(0.0, 1.0);
+
+
 bool GradientCrit::satisfy(const StopCriterionPars& pars) const
 {
 	const GradientCritPars &gcpars = dynamic_cast<const GradientCritPars&>(pars);
@@ -167,5 +171,41 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 	return OptMethodSolution<Vector>{optimal_value, optimal_point, iter};
 }
 
+OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Area &area, const OptMethodPars &pars)
+{
+	const Parallelepiped &prlp = dynamic_cast<const Parallelepiped&>(area);
+	const RSPars &params = dynamic_cast<const RSPars&>(pars);
+	const double p = params.getp();
+	const double alpha = params.getalpha();
+
+	Vector optpoint = prlp.getleftlimits(), currpoint;
+	double optvalue = func(optpoint), currvalue, beta;
+	double delta = 1;
+	unsigned int iter = 0;
+	while (iter < maxiter)
+	{
+		beta = UNIFORMDIST(generator);
+		if (beta < p)
+		{
+			currpoint = prlp.getrandompoint();
+		}
+		else
+		{
+			currpoint = prlp.intercept(Parallelepiped(optpoint - delta, optpoint + delta)).getrandompoint();
+		}
+		currvalue = func(currpoint);
+
+		if (currvalue < optvalue)
+		{
+			optpoint = currpoint;
+			optvalue = currvalue;
+			if (alpha > p)
+				delta *= alpha;
+		}
+		++iter;
+	}
+	optimal_value = optvalue;
+	return OptMethodSolution<Vector>{optvalue, optpoint, iter};
+}
 
 //ToDo: обернуть несовпадающие аргументы в объект отдельного класса, от него унаследовать два предка с разными аргументами
