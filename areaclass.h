@@ -22,7 +22,7 @@ public:
 	Parallelepiped() : dim(0) {}; //пустое множество
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits, const unsigned int dim) : left_limits(left_limits), right_limits(right_limits), dim(dim) {};
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits) : left_limits(left_limits), right_limits(right_limits), dim(left_limits.dim) {};
-
+	Parallelepiped(const Parallelepiped &prlp) :left_limits(prlp.left_limits), right_limits(prlp.right_limits), dim(prlp.dim) {  };
 	Vector getleftlimits() const { return left_limits; }
 
 	bool contain(const Vector &x) const override
@@ -42,10 +42,9 @@ public:
 class Segment : public Parallelepiped
 {
 public:
-	const double &left_limit;
-	const double &right_limit;
-	Segment(const double left_limit, const double right_limit) : Parallelepiped(Vector(left_limit), Vector(right_limit), 1), 
-																 left_limit(left_limits[0]), right_limit(right_limits[0]){};
+	double left_limit;
+	double right_limit;
+	Segment(const double left_limit, const double right_limit) : Parallelepiped(Vector(left_limit), Vector(right_limit), 1) { this->left_limit = left_limits[0]; this->right_limit = right_limits[0]; }
 
 	bool contain(const double x) const
 	{
@@ -56,5 +55,3 @@ public:
 
 	~Segment() {};
 };
-
-//ToDo: не заморачиваться с вынесением отрезка, так как это одномерный параллелепипед (возможно, можно ещё решить с помощью шаблонов)

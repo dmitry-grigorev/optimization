@@ -145,26 +145,33 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 	const Parallelepiped &prlp = dynamic_cast<const Parallelepiped&>(area);
 	const RibPolPars &params = dynamic_cast<const RibPolPars&>(pars);
 	const Vector &init = params.getInit();
+	const StopCriterion &crit = params.getCriterion();
 
 	MultiDimGoldRatio gropt(tol, maxiter);
 	unsigned int iter = 0;
 	double step = 0;
+	double beta;
 	Vector currpoint(init);
+	Vector prevpoint(init + 1);
 	Vector currgrad = func.gradient(init);
 	Vector currdir = -currgrad ;
 	Vector newgrad(currdir.dim);
 
-	GradientCrit criterion(tol);
+	vector<Vector> trajectory(1, init);
 
-	while (!criterion.satisfy(func, currpoint) && iter < maxiter && prlp.contain(currpoint))
+	while (!satisfy(crit, func, currpoint, prevpoint) && iter < maxiter && prlp.contain(currpoint))
 	{
 		gropt.optimize(func, UNITSEGMENT, MDLSPars(currpoint, currdir));
 		step = gropt.optimal_x;
+		prevpoint = currpoint;
 		currpoint = currpoint + currdir * step;
 		newgrad = func.gradient(currpoint);
-		double beta = newgrad * (newgrad - currgrad) / currgrad.scalar_square();
+		beta = newgrad * (newgrad - currgrad) / currgrad.scalar_square();
 		currdir = -currgrad + currdir * beta;
 		currgrad = newgrad;
+
+		trajectory.push_back(currpoint);
+
 		++iter;
 	}
 
@@ -173,7 +180,7 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 	optimal_point = currpoint;
 	optimal_value = func(optimal_point);
 
-	return OptMethodSolution<Vector>{optimal_value, optimal_point, iter};
+	return OptMethodSolution<Vector>{optimal_value, optimal_point, iter, trajectory};
 }
 
 OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Area &area, const OptMethodPars &pars)
@@ -184,12 +191,14 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 	const double alpha = params.getalpha();
 	const unsigned int lastimprovenumber = params.getlin();
 
-	Vector optpoint = prlp.getleftlimits(), currpoint;
+	Vector optpoint = prlp.getrandompoint(), currpoint;
 	double optvalue = func(optpoint), currvalue, beta;
 	double delta = 1;
 	unsigned int iter = 0;
 
 	LastImproveCrit crit(lastimprovenumber);
+
+	vector<Vector> trajectory(1, optpoint);
 
 	while (!crit.satisfy() && iter < maxiter)
 	{
@@ -211,13 +220,14 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 			if (alpha > p)
 				delta *= alpha;
 			crit.count = 0;
+			trajectory.push_back(currpoint);
 		}
 		else
 			++crit.count;
 		++iter;
 	}
 	optimal_value = optvalue;
-	return OptMethodSolution<Vector>{optvalue, optpoint, iter};
+	return OptMethodSolution<Vector>{optvalue, optpoint, iter, trajectory};
 }
 
 //ToDo: обернуть несовпадающие аргументы в объект отдельного класса, от него унаследовать два предка с разными аргументами

@@ -3,10 +3,11 @@
 #include "vectorclass.h"
 #include "areaclass.h"
 #include "functionclass.h"
+#include <string>
 using namespace std;
 
 const double GOLDENRATIO = 1.61803398875;
-const Segment UNITSEGMENT(0, 1);
+const Segment UNITSEGMENT(0., 1.);
 
 
 template <typename T>
@@ -15,6 +16,14 @@ struct OptMethodSolution
 	double value;
 	T argmin;
 	unsigned int iter;
+	vector<T> trajectory;
+};
+
+struct RBSatisftyArgs
+{
+	Vector &first;
+	Vector &second;
+	Function &function;
 };
 
 class StopCriterionPars
@@ -49,29 +58,36 @@ public:
 
 class StopCriterion
 {
+	const char *name;
 protected:
 	double tol;
 	unsigned int maximprovenumber;
+	StopCriterion() = default;
 	StopCriterion(const double tol) : tol(tol) {};
 	StopCriterion(const unsigned int n) : maximprovenumber(n) {};
 public:
 	virtual bool satisfy(const StopCriterionPars&) const = 0;
+	virtual const char* getname() const = 0;
 };
 
 class GradientCrit : public StopCriterion
 {
 public:
+	GradientCrit() = default;
 	GradientCrit(const double tol) : StopCriterion(tol) {};
 	bool satisfy(const StopCriterionPars& pars) const override final;
-	bool satisfy(const Function& func, const Vector& vector) { return satisfy(GradientCritPars(func, vector)); }
+	bool satisfy(const Function& func, const Vector& vector) const { return satisfy(GradientCritPars(func, vector)); }
+	const char* getname() const override { return "Gradient"; }
 };
 
 class NeighborCrit : public StopCriterion
 {
 public:
+	NeighborCrit() = default;
 	NeighborCrit(const double tol) : StopCriterion(tol) {};
 	bool satisfy(const StopCriterionPars& pars) const override final;
-	bool satisfy(const Vector& first, const Vector& second) { return satisfy(NeighborCritPars(first, second)); }
+	bool satisfy(const Vector& first, const Vector& second) const { return satisfy(NeighborCritPars(first, second)); }
+	const char* getname() const override { return "Neighbor"; }
 };
 
 class LastImproveCrit : public StopCriterion
@@ -81,7 +97,10 @@ public:
 	LastImproveCrit(const unsigned int n): count(0), StopCriterion(n) {};
 	bool satisfy(const StopCriterionPars& pars) const override final;
 	bool satisfy() { return satisfy(StopCriterionPars()); }
+	const char* getname() const override { return "LastImprove"; }
 };
+
+
 
 class OptMethodPars
 {
@@ -94,12 +113,15 @@ public:
 class RibPolPars : public OptMethodPars
 {
 	Vector initial;
+
+	const StopCriterion &criterion;
 public:
-	RibPolPars(const Vector &initial) : initial(initial) {};
-	RibPolPars(const RibPolPars& pars) : initial(pars.initial) {};
-	RibPolPars(const RibPolPars&& pars) : initial(move(pars.initial)) {};
+	RibPolPars(const Vector &initial, const StopCriterion &crit) : initial(initial), criterion(crit) {};
+	RibPolPars(const RibPolPars& pars) : initial(pars.initial), criterion(pars.criterion) {};
+	RibPolPars(const RibPolPars&& pars) : initial(move(pars.initial)), criterion(move(pars.criterion)) {};
 public:
 	const Vector& getInit() const { return initial; }
+	const StopCriterion& getCriterion() const { return criterion; }
 };
 
 class MDLSPars : public OptMethodPars
@@ -109,7 +131,7 @@ class MDLSPars : public OptMethodPars
 public:
 	MDLSPars(const Vector &pivot, const Vector &dir): pivot(pivot), dir(dir) {};
 	MDLSPars(const MDLSPars &pars) : pivot(pars.pivot), dir(pars.dir) {};
-	MDLSPars(const MDLSPars &&pars) : pivot(move(pars.pivot)), dir(move(pars.dir)) {};
+	MDLSPars(const MDLSPars &&pars) : pivot(move(pars.pivot)), dir(move(pars.dir)){};
 
 	const Vector& getPivot() const { return pivot; }
 	const Vector& getDirection() const { return dir; }
@@ -177,10 +199,21 @@ public:
 	RibierePolak(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
 
 	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
-	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &init) { return optimize(func, area, RibPolPars(init)); }
+	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const Vector &init, const StopCriterion &crit) { return optimize(func, area, RibPolPars(init, crit)); }
 
+private:
+	bool satisfy(const StopCriterion& crit, const Function &func, const Vector &point1, const Vector &point2)
+	{
+		if (strcmp(crit.getname(), "Gradient") == 0)
+		{
+			return (dynamic_cast<const GradientCrit&>(crit)).satisfy(func, point1);
+		}
+		return (dynamic_cast<const NeighborCrit&>(crit)).satisfy(point1, point2);
+	}
+public:
 	~RibierePolak() {};
 };
+
 
 class RandomSearch : public OptimizationMethod
 {
