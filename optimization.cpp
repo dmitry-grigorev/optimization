@@ -170,7 +170,7 @@ int main()
 	}
 	vector<Vector> &traj = res.trajectory;
 	std::cout << res.argmin << std::endl << res.value << std::endl << res.iter << std::endl << std::endl;
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < min<int>(traj.size(),10) ; ++i)
 	{
 		std::cout << traj[i] << std::endl;
 	}

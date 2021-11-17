@@ -7,7 +7,6 @@ class Vector
 	std::vector<double> values;
 public:
 	unsigned int dim;
-
 	Vector() = default;
 	explicit Vector(unsigned int dim) :dim(dim) { values.resize(dim); }
 
@@ -120,6 +119,24 @@ public:
 		os << v.values[v.dim - 1];
 		os << ")";
 		return os;
+	}	
+
+	Vector elementwise_abs() const
+	{
+		Vector res(*this);
+		for (int i = 0; i < dim; ++i)
+			if (res[i] < 0)
+				res[i] *= (-1);
+		return res;
+	}
+
+	int getimaxcomponent() const
+	{
+		double imax = 0;
+		for (int i = 1; i < dim; ++i)
+			if (values[i] > values[imax])
+				imax = i;
+		return imax;
 	}
 
 	~Vector()

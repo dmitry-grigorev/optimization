@@ -31,3 +31,10 @@ Parallelepiped Parallelepiped::intercept(const Parallelepiped &right) const
 	}
 	return Parallelepiped(res_lefts, res_rights);
 }
+Vector Parallelepiped::projectiononborder(const Vector& point) const
+{
+	int imaxdiff = (point - center).elementwise_abs().getimaxcomponent();
+	double maxdiff = (point - center).elementwise_abs()[imaxdiff];
+	double size = sizes[imaxdiff];
+	return center + (point - center)*(size / maxdiff);
+}

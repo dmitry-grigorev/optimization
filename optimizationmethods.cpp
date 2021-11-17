@@ -81,7 +81,7 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 
 	const double left = segm.left_limit;
 	const double right = segm.right_limit;
-	const double part = 10*tol*(right - left); // шаг деления на секции
+	const double part = 10*tol*(right - left); 
 
 	double curr_lborder = left, curr_rborder = curr_lborder + part;
 	double curr_left = curr_lborder, curr_right = curr_rborder, curr_diff;
@@ -139,8 +139,8 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 
 	return OptMethodSolution<Vector>{optimal_value, opt_point, 0};
 }
-
-OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Area &area, const OptMethodPars &pars)//критерий вынести сюда
+//РјРµС‚РѕРґ СЃРѕРїСЂСЏР¶С‘РЅРЅС‹С… РіСЂР°РґРёРµРЅС‚РѕРІ Р РёР±СЊРµСЂР°-РџРѕР»Р°РєР° СЃ РІРѕР·РІСЂР°С‚РѕРј РІ РѕР±Р»Р°СЃС‚СЊ РІ СЃР»СѓС‡Р°Рµ РІС‹С…РѕРґР° Р·Р° РЅРµС‘
+OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Area &area, const OptMethodPars &pars)
 {
 	const Parallelepiped &prlp = dynamic_cast<const Parallelepiped&>(area);
 	const RibPolPars &params = dynamic_cast<const RibPolPars&>(pars);
@@ -175,6 +175,11 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 		++iter;
 	}
 
+	if (!prlp.contain(currpoint))
+	{
+		currpoint = prlp.projectiononborder(currpoint);
+		trajectory.push_back(currpoint);
+	}
 	optimal_point.resize(init.dim);
 
 	optimal_point = currpoint;
@@ -229,5 +234,3 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 	optimal_value = optvalue;
 	return OptMethodSolution<Vector>{optvalue, optpoint, iter, trajectory};
 }
-
-//ToDo: обернуть несовпадающие аргументы в объект отдельного класса, от него унаследовать два предка с разными аргументами
