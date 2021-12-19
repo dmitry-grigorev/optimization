@@ -2,6 +2,7 @@
 #include "functionclass.h"
 #include "optimizationmethods.h"
 #include "areaclass.h"
+using namespace std;
 
 std::mt19937 generator(SEED);
 std::uniform_real_distribution<double> UNIFORMDIST(0.0, 1.0);

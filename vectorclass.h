@@ -3,36 +3,27 @@
 #include <iostream>
 #include <valarray>
 #include <limits>
-using namespace std;
 
-class Vector : public valarray<double>
+class Vector : public std::valarray<double>
 {
 public:
 	size_t dim;
-	Vector() : valarray<double>() {};
-	explicit Vector(size_t dim) :dim(dim), valarray<double>(0., dim) {  };
+	Vector() : std::valarray<double>() {};
+    explicit Vector(size_t dim) : std::valarray<double>(0., dim), dim(dim) {  };
 
-	Vector(const double *values, size_t dim) : dim(dim), valarray<double>(values, dim) {};
-	Vector(const double value, size_t dim) : dim(dim), valarray<double>(value, dim) {};
+    Vector(const double *values, size_t dim) : std::valarray<double>(values, dim), dim(dim) {};
+    Vector(const double value, size_t dim) : std::valarray<double>(value, dim), dim(dim) {};
 
-	explicit Vector(const double value) : dim(1), valarray<double>(value, 1) {};
+    explicit Vector(const double value) : std::valarray<double>(value, 1), dim(1) {};
 
-	Vector(const valarray<double> &arr) : dim(arr.size()), valarray<double>(arr) {};
-	Vector(const Vector &src) : dim(src.dim), valarray<double>(src) {};
+    Vector(const valarray<double> &arr) : std::valarray<double>(arr), dim(arr.size()) {};
+    Vector(const Vector &src) : std::valarray<double>(src), dim(src.dim) {};
 
-	Vector(const Vector &&src) : dim(src.dim), valarray<double>(move(src)) {};
+    Vector(const Vector &&src) : valarray<double>(std::move(dynamic_cast<const std::valarray<double>&&>(src))), dim(src.dim) {};
 
-	Vector& operator = (const Vector &right)
-	{
-		valarray<double>::operator = (right);
-		dim = right.dim;
-		return *this;
-	}
+	Vector& operator = (const Vector &right);
 
-	Vector operator + (const double a)
-	{
-		return (*this) + Vector(a, dim);
-	}
+	Vector operator + (const double a);
 
 	double dot(const Vector &right) const;
 
@@ -47,25 +38,25 @@ public:
 		return imax;
 	}
 
-	friend ostream& operator << (ostream& s, const Vector& v)
+	friend std::ostream& operator << (std::ostream& s, const Vector& v)
 	{
 		s << '(';
-		for (auto vit = begin(v), vend = end(v); vit != vend; ++vit)
+		for (auto vit = std::begin(v), vend = std::end(v); vit != vend; ++vit)
 			s << *vit << ' ';
 		s << ')';
 		return s;
 	}
 
-	friend istream& operator >> (istream& s, Vector& v)
+	friend std::istream& operator >> (std::istream& s, Vector& v)
 	{
-		if (!v.size()) throw exception("Unavailable data access");
-		for (auto vit = begin(v), vend = end(v); vit != vend; ++vit)
+        if (!v.size()) throw std::runtime_error("Unavailable data access");
+		for (auto vit = std::begin(v), vend = std::end(v); vit != vend; ++vit)
 		{
 			s >> *vit;
 			while (s.fail()) {
 				s.clear();
-				s.ignore(numeric_limits<streamsize>::max(), '\n');
-				cout << "Bad entry.  Enter a NUMBER: " << endl;
+				s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				std::cout << "Bad entry.  Enter a NUMBER: " << std::endl;
 				s >> *vit;
 			}
 		}

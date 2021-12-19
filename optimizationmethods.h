@@ -5,7 +5,6 @@
 #include "areaclass.h"
 #include "functionclass.h"
 #include <string>
-using namespace std;
 
 const double GOLDENRATIO = 1.61803398875;
 const Segment UNITSEGMENT(0., 1.);
@@ -17,7 +16,7 @@ struct OptMethodSolution
 	double value;
 	T argmin;
 	unsigned int iter;
-	list<T> trajectory;
+	std::list<T> trajectory;
 };
 
 struct RBSatisftyArgs
@@ -119,7 +118,7 @@ class RibPolPars : public OptMethodPars
 public:
 	RibPolPars(const Vector &initial, const StopCriterion &crit) : initial(initial), criterion(crit) {};
 	RibPolPars(const RibPolPars& pars) : initial(pars.initial), criterion(pars.criterion) {};
-	RibPolPars(const RibPolPars&& pars) : initial(move(pars.initial)), criterion(move(pars.criterion)) {};
+	RibPolPars(const RibPolPars&& pars) : initial(std::move(pars.initial)), criterion(std::move(pars.criterion)) {};
 public:
 	const Vector& getInit() const { return initial; }
 	const StopCriterion& getCriterion() const { return criterion; }
@@ -146,7 +145,7 @@ class RSPars : public OptMethodPars
 public:
 	RSPars(const double p, const double alpha, const unsigned int lastimprovenumber) : p(p), alpha(alpha), lastimprovenumber(lastimprovenumber) {};
 	RSPars(const RSPars &pars) :p(pars.p), alpha(pars.alpha), lastimprovenumber(pars.lastimprovenumber){};
-	RSPars(const RSPars &&pars) :p(move(pars.p)), alpha(move(pars.alpha)), lastimprovenumber(move(pars.lastimprovenumber)) {};
+	RSPars(const RSPars &&pars) :p(std::move(pars.p)), alpha(std::move(pars.alpha)), lastimprovenumber(std::move(pars.lastimprovenumber)) {};
 
 	const double getp() const { return p; }
 	const double getalpha() const { return alpha; }

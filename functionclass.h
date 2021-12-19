@@ -28,7 +28,7 @@ public:
 	void setpivot(const Vector &pivot) { this->pivot = pivot; }
 	void setdir(const Vector &dir) { this->dir = dir; }
 
-	double operator ()(const double x) const { return func(pivot + dir * x); }
+	double operator ()(const double x) const { return func(Vector(pivot + dir * x)); }
 
 
 	virtual ~FunctionCrossed() {};
