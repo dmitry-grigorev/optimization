@@ -1,5 +1,6 @@
 #pragma once
 #include <random>
+#include <list>
 #include "vectorclass.h"
 #include "areaclass.h"
 #include "functionclass.h"
@@ -16,7 +17,7 @@ struct OptMethodSolution
 	double value;
 	T argmin;
 	unsigned int iter;
-	vector<T> trajectory;
+	list<T> trajectory;
 };
 
 struct RBSatisftyArgs
@@ -218,7 +219,7 @@ public:
 class RandomSearch : public OptimizationMethod
 {
 public:
-	RandomSearch(const double eps, const unsigned int maxiter = 100) : OptimizationMethod(eps, maxiter) {};
+	RandomSearch(const unsigned int maxiter = 10000) : OptimizationMethod(0., maxiter) {};
 
 	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const OptMethodPars &pars) override;
 	OptMethodSolution<Vector> optimize(const Function& func, const Area &area, const double p, const double alpha, const unsigned int maximprovenumber) { return optimize(func, area, RSPars(p, alpha, maximprovenumber)); }

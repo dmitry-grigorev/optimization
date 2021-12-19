@@ -8,11 +8,12 @@ std::uniform_real_distribution<double> UNIFORMDIST1(0.0, 1.0);
 
 Vector Parallelepiped::getrandompoint() const
 {
-	Vector res(dim);
+	Vector randoms(0., dim);
 
 	for (int i = 0; i < dim; ++i)
-		res[i] = (right_limits[i] - left_limits[i])*UNIFORMDIST1(generator1) + left_limits[i];
-	return res;
+		randoms[i] = UNIFORMDIST1(generator1);
+
+	return (right_limits - left_limits)*randoms + left_limits;
 }
 
 Parallelepiped Parallelepiped::intercept(const Parallelepiped &right) const
@@ -33,8 +34,9 @@ Parallelepiped Parallelepiped::intercept(const Parallelepiped &right) const
 }
 Vector Parallelepiped::projectiononborder(const Vector& point) const
 {
-	int imaxdiff = (point - center).elementwise_abs().getimaxcomponent();
-	double maxdiff = (point - center).elementwise_abs()[imaxdiff];
+	Vector abspoint = Vector(abs(point - center));
+	int imaxdiff = abspoint.getimaxcomponent();
+	double maxdiff = abspoint[imaxdiff];
 	double size = sizes[imaxdiff];
 	return center + (point - center)*(size / maxdiff);
 }

@@ -13,7 +13,9 @@ bool GradientCrit::satisfy(const StopCriterionPars& pars) const
 	const Function &func = gcpars.getfunc();
 	const Vector &point = gcpars.getpoint();
 
-	return (func.gradient(point)).scalar_square() < tol*tol;
+	double norm = (func.gradient(point)).scalar_square();
+
+	return norm < tol*tol;
 }
 
 bool NeighborCrit::satisfy(const StopCriterionPars& pars) const 
@@ -22,7 +24,9 @@ bool NeighborCrit::satisfy(const StopCriterionPars& pars) const
 	const Vector &first = ncpars.getfirst();
 	const Vector &second = ncpars.getsecond();
 
-	return (first - second).scalar_square() < tol*tol;
+	double diff = (Vector(first - second)).scalar_square();
+
+	return diff < tol*tol;
 }
 
 bool LastImproveCrit::satisfy(const StopCriterionPars& pars) const
@@ -81,7 +85,7 @@ OptMethodSolution<Vector> MultiDimGoldRatio::optimize(const Function& func, cons
 
 	const double left = segm.left_limit;
 	const double right = segm.right_limit;
-	const double part = 10*tol*(right - left); 
+	const double part = tol; 
 
 	double curr_lborder = left, curr_rborder = curr_lborder + part;
 	double curr_left = curr_lborder, curr_right = curr_rborder, curr_diff;
@@ -152,12 +156,12 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 	double step = 0;
 	double beta;
 	Vector currpoint(init);
-	Vector prevpoint(init + 1);
+	Vector prevpoint(init + 1.);
 	Vector currgrad = func.gradient(init);
 	Vector currdir = -currgrad ;
 	Vector newgrad(currdir.dim);
 
-	vector<Vector> trajectory(1, init);
+	list<Vector> trajectory(1, init);
 
 	while (!satisfy(crit, func, currpoint, prevpoint) && iter < maxiter && prlp.contain(currpoint))
 	{
@@ -166,8 +170,8 @@ OptMethodSolution<Vector> RibierePolak::optimize(const Function &func, const Are
 		prevpoint = currpoint;
 		currpoint = currpoint + currdir * step;
 		newgrad = func.gradient(currpoint);
-		beta = newgrad * (newgrad - currgrad) / currgrad.scalar_square();
-		currdir = -currgrad + currdir * beta;
+		beta = newgrad.dot(newgrad - currgrad) / currgrad.scalar_square();
+		currdir = -newgrad + currdir * beta;
 		currgrad = newgrad;
 
 		trajectory.push_back(currpoint);
@@ -196,14 +200,15 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 	const double alpha = params.getalpha();
 	const unsigned int lastimprovenumber = params.getlin();
 
-	Vector optpoint = prlp.getrandompoint(), currpoint;
+	Vector optpoint = prlp.getrandompoint();
+	Vector currpoint(optpoint.dim);
 	double optvalue = func(optpoint), currvalue, beta;
 	double delta = 1;
 	unsigned int iter = 0;
-
+	
 	LastImproveCrit crit(lastimprovenumber);
 
-	vector<Vector> trajectory(1, optpoint);
+	list<Vector> trajectory(1, optpoint);
 
 	while (!crit.satisfy() && iter < maxiter)
 	{
@@ -222,8 +227,10 @@ OptMethodSolution<Vector> RandomSearch::optimize(const Function& func, const Are
 		{
 			optpoint = currpoint;
 			optvalue = currvalue;
-			if (alpha > p)
+			if (beta > p)
 				delta *= alpha;
+			else
+				delta = 1;
 			crit.count = 0;
 			trajectory.push_back(currpoint);
 		}

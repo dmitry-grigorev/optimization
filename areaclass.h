@@ -14,7 +14,7 @@ public:
 
 class Parallelepiped : public Area
 {
-	const unsigned int dim;
+	size_t dim;
 protected:
 	const Vector left_limits;
 	const Vector right_limits;
@@ -22,7 +22,7 @@ protected:
 	const Vector sizes;
 public:
 	Parallelepiped() : dim(0) {}; //пустое множество
-	Parallelepiped(const Vector &left_limits, const Vector &right_limits, const unsigned int dim) : left_limits(left_limits), right_limits(right_limits), dim(dim), center((left_limits+right_limits)*0.5), sizes((right_limits - left_limits)*0.5) {};
+	Parallelepiped(const Vector &left_limits, const Vector &right_limits, const size_t dim) : left_limits(left_limits), right_limits(right_limits), dim(dim), center((left_limits+right_limits)*0.5), sizes((right_limits - left_limits)*0.5) {};
 	Parallelepiped(const Vector &left_limits, const Vector &right_limits) : left_limits(left_limits), right_limits(right_limits), dim(left_limits.dim), center((left_limits + right_limits)*0.5), sizes((right_limits - left_limits)*0.5) {};
 	Parallelepiped(const Parallelepiped &prlp) :left_limits(prlp.left_limits), right_limits(prlp.right_limits), dim(prlp.dim), center(prlp.center), sizes(prlp.sizes) {  };
 	Vector getleftlimits() const { return left_limits; }

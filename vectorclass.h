@@ -1,148 +1,80 @@
 #pragma once
 #include <vector>
 #include <iostream>
+#include <valarray>
+#include <limits>
+using namespace std;
 
-class Vector
+class Vector : public valarray<double>
 {
-	std::vector<double> values;
 public:
-	unsigned int dim;
-	Vector() = default;
-	explicit Vector(unsigned int dim) :dim(dim) { values.resize(dim); }
+	size_t dim;
+	Vector() : valarray<double>() {};
+	explicit Vector(size_t dim) :dim(dim), valarray<double>(0., dim) {  };
 
-	Vector(const double *values, unsigned short dim) : dim(dim)
-	{
-		this->values.resize(dim);
-		for (int i = 0; i < dim; ++i)
-			this->values[i] = values[i];
-	}
+	Vector(const double *values, size_t dim) : dim(dim), valarray<double>(values, dim) {};
+	Vector(const double value, size_t dim) : dim(dim), valarray<double>(value, dim) {};
 
-	explicit Vector(const double value) : dim(1) { values.resize(1, value); }
+	explicit Vector(const double value) : dim(1), valarray<double>(value, 1) {};
 
-	Vector(const Vector &src) : dim(src.dim)
-	{
-		this->values.resize(src.dim);
-		for (int i = 0; i < dim; ++i)
-			this->values[i] = src.values[i];
-	}
-	
-	//Vector(const Vector &&src) : dim(src.dim) { values.resize(dim); values = vector<double>(move(values)); }
-	Vector(const Vector &&src) : dim(src.dim), values(move(src.values)) {};
+	Vector(const valarray<double> &arr) : dim(arr.size()), valarray<double>(arr) {};
+	Vector(const Vector &src) : dim(src.dim), valarray<double>(src) {};
+
+	Vector(const Vector &&src) : dim(src.dim), valarray<double>(move(src)) {};
 
 	Vector& operator = (const Vector &right)
 	{
-		if (values.size() != right.dim)
-		{
-			values.resize(right.dim);
-			dim = right.dim;
-		}
-		for (int i = 0; i < dim; ++i)
-			values[i] = right.values[i];
+		valarray<double>::operator = (right);
+		dim = right.dim;
 		return *this;
 	}
 
-	const double operator [] (const int i) const
+	Vector operator + (const double a)
 	{
-		return values[i];
-	}
-
-	double& operator [] (const int i)
-	{
-		return values[i];
+		return (*this) + Vector(a, dim);
 	}
 
 	double dot(const Vector &right) const;
 
 	const double scalar_square() const;
 
-	double operator *(const Vector &right) const
-	{
-		return dot(right);
-	}
-
-	Vector operator - () const &
-	{
-		Vector res(dim);
-		for (int i = 0; i < dim; ++i)
-			res.values[i] = -values[i];
-		return res;
-	}
-
-	Vector sum(const Vector &right) const;
-
-	Vector operator +(const Vector &right) const
-	{
-		return sum(right);
-	}
-
-	Vector operator +(const double &a) const
-	{
-		Vector res(*this);
-		for (int i = 0; i < dim; ++i)
-			res[i] += a;
-		return res;
-	}
-
-	Vector subtraction(const Vector &right) const;
-
-	Vector operator -(const Vector &right) const
-	{
-		return subtraction(right);
-	}
-
-	Vector operator -(const double &a) const
-	{
-		Vector res(*this);
-		for (int i = 0; i < dim; ++i)
-			res[i] -= a;
-		return res;
-	}
-
-	Vector multOnScalar(const double a) const;
-
-	Vector operator *(const double a) const
-	{
-		return multOnScalar(a);
-	}
-
-	void resize(const int newsize)
-	{
-		dim = newsize;
-		values.resize(dim);
-	}
-
-	friend std::ostream& operator<<(std::ostream& os, const Vector& v)
-	{
-		os << "(";
-		for (int i = 0; i < v.dim - 1; ++i)
-			os << v.values[i] << ", ";
-		os << v.values[v.dim - 1];
-		os << ")";
-		return os;
-	}	
-
-	Vector elementwise_abs() const
-	{
-		Vector res(*this);
-		for (int i = 0; i < dim; ++i)
-			if (res[i] < 0)
-				res[i] *= (-1);
-		return res;
-	}
-
 	int getimaxcomponent() const
 	{
-		double imax = 0;
+		int imax = 0;
 		for (int i = 1; i < dim; ++i)
-			if (values[i] > values[imax])
+			if ((*this)[i] > (*this)[imax])
 				imax = i;
 		return imax;
 	}
+
+	friend ostream& operator << (ostream& s, const Vector& v)
+	{
+		s << '(';
+		for (auto vit = begin(v), vend = end(v); vit != vend; ++vit)
+			s << *vit << ' ';
+		s << ')';
+		return s;
+	}
+
+	friend istream& operator >> (istream& s, Vector& v)
+	{
+		if (!v.size()) throw exception("Unavailable data access");
+		for (auto vit = begin(v), vend = end(v); vit != vend; ++vit)
+		{
+			s >> *vit;
+			while (s.fail()) {
+				s.clear();
+				s.ignore(numeric_limits<streamsize>::max(), '\n');
+				cout << "Bad entry.  Enter a NUMBER: " << endl;
+				s >> *vit;
+			}
+		}
+		return s;
+	}
+
 
 	~Vector()
 	{
 		dim = 0;
 	}
 };
-
-//ToDo: ввести унарный минус, сделать умножение на скал€р коммутативным; ввести умные указатели в использование

@@ -7,8 +7,34 @@
 #include "areaclass.h"
 #include "functionclass.h"
 #include "optimizationmethods.h"
+#include <type_traits>
 
 using namespace std;
+
+class switchArg
+{
+	int min;
+	int max;
+public:
+	int value;
+	switchArg(const int min, const int max) : min(min), max(max) { };
+
+	friend istream& operator >> (istream &s, switchArg& sa)
+	{
+		s >> sa.value;
+
+		while (s.fail() || sa.value < sa.min || sa.value > sa.max) {
+			s.clear();
+			s.ignore(numeric_limits<streamsize>::max(), '\n');
+			cout << "Bad entry.  Enter an INTEGER NUMBER from: " << sa.min << " to " << sa.max << endl;
+			s >> sa.value;
+		}
+
+		return s;
+	}
+
+	int operator() () { return value; }
+};
 
 class Paraboloid : public Function
 {
@@ -18,6 +44,11 @@ public:
 	double expression(const Vector &x) const override
 	{
 		return x[0]*x[0] + x[1]*x[1];
+	}
+
+	const char* stringexpression() const override
+	{
+		return "x^2 + y^2";
 	}
 
 	const Vector gradient(const Vector &x) const override
@@ -39,6 +70,11 @@ public:
 		return x[0] * x[0] + x[1] * x[1] + (x[2] - 4)*(x[2] - 4);
 	}
 
+	const char* stringexpression() const override
+	{
+		return "x^2 + y^2 + (z-4)^2";
+	}
+
 	const Vector gradient(const Vector &x) const override
 	{
 		Vector grad(x.dim);
@@ -56,9 +92,12 @@ public:
 
 	double expression(const Vector &x) const override
 	{
-		double a = 1 - x[0];
-		double b = x[1] - x[0] * x[0];
-		return a*a + 100*b*b;
+		return (1- x[0])*(1 - x[0]) + 100*(x[1] - x[0] * x[0])*(x[1] - x[0] * x[0]);
+	}
+
+	const char* stringexpression() const override
+	{
+		return "(1-x)^2 + 100*(y-x^2)^2";
 	}
 
 	const Vector gradient(const Vector &x) const override
@@ -78,86 +117,104 @@ struct DebugStruct
 	StopCriterion *crit = nullptr;
 	OptimizationMethod *optimizer = nullptr;
 	Vector *init = nullptr;
+	Vector *left_limits = nullptr;
+	Vector *right_limits = nullptr;
+
+	int maxiters = 10000;
+	int maxiterstostay = 10000;
+	double prob = 0.3;
+	double shrinkrate = 0.5;
+	double searchradius; 
 };
+
+bool isUnit(const double a) { return a > 0 && a < 1 ; }
+
+void inputRandomSearchParameters(DebugStruct& ds)
+{
+	cout << "Type probability parameter" << endl;
+	cin >> ds.prob;
+	while (cin.fail() || !isUnit(ds.prob)) {
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cout << "Bad entry.  Enter a NUMBER greater than 0 and lower than 1: " << endl;
+		cin >> ds.prob;
+	}
+
+	cout << "Type search radius shrink rate parameter" << endl;
+	cin >> ds.shrinkrate;
+	while (cin.fail() || !isUnit(ds.shrinkrate)) {
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cout << "Bad entry.  Enter a NUMBER greater than 0 and lower than 1: " << endl;
+		cin >> ds.shrinkrate;
+	}
+}
 
 int main()
 {
-	int choice, methodchoice;
+	switchArg methodtype(0, 1), criterionnumber(0, 1), functionnumber(0, 2);
+
 	DebugStruct dbg;
 	OptMethodSolution<Vector> res;
 	cout << "Method type: 0 - deterministic, 1 - stochastic" << endl;
-	cin >> methodchoice;
+	cin >> methodtype;
 
-	switch (methodchoice)
+	switch (methodtype())
 	{
 	case 0: {
-		dbg.optimizer = new RibierePolak(1e-3, 1000);
+		dbg.optimizer = new RibierePolak(1e-4, dbg.maxiters);
 
 		cout << "Criterion: 0 - Gradient, 1 - Neighbor" << endl;
-		cin >> choice;
+		cin >> criterionnumber;
 
-		switch (choice)
+		switch (criterionnumber())
 		{
 		case 0: {
-			dbg.crit = new GradientCrit(1e-3);
+			dbg.crit = new GradientCrit(1e-4);
 		}; break;
 		case 1: {
-			dbg.crit = new NeighborCrit(1e-3);
+			dbg.crit = new NeighborCrit(1e-4);
 		}; break;
 		}
 
 	}; break;
 	case 1: {
-		dbg.optimizer = new RandomSearch(1e-3, 10000);
+		dbg.optimizer = new RandomSearch(dbg.maxiters);
 	}; break;
 	}
 	
 	cout << "Function: 0 - Paraboloid, 1 - 2-d Rosenbrock, 2 - 3d Paraboloid" << endl;
-	cin >> choice;
+	cin >> functionnumber;
 
-	switch (choice)
+	switch (functionnumber())
 	{
 	case 0: {
 		dbg.func = new Paraboloid();
-
-		double a[2]{ -1, -1 };
-		double b[2]{ -3, -3 };
-		double c[2]{ 3, 3 };
-
-		dbg.init = new Vector(a, 2);
-		Vector left(b, 2);
-		Vector right(c, 2);
-		dbg.area = new Parallelepiped(left, right);
 	}; break;
 	case 1: {
 		dbg.func = new Rosenbrock();
-
-		double a[2]{ -1, -1 };
-		double b[2]{ -3, -3 };
-		double c[2]{ 3, 3 };
-
-		dbg.init = new Vector(a, 2);
-		Vector left(b, 2);
-		Vector right(c, 2);
-		dbg.area = new Parallelepiped(left, right);
 	}; break;
 	case 2: {
 		dbg.func = new Paraboloid3();
-
-		double a[3]{ -1, -1, -1 };
-		double b[3]{ -3, -3, -3 };
-		double c[3]{ 3, 3, 3 };
-
-		dbg.init = new Vector(a, 3);
-		Vector left(b, 3);
-		Vector right(c, 3);
-		dbg.area = new Parallelepiped(left, right);
 	}; break;
 	}
 
-	
+	dbg.left_limits = new Vector(dbg.func->dim);
+	dbg.right_limits = new Vector(dbg.func->dim);
+	dbg.init = new Vector(dbg.func->dim);
 
-	switch(methodchoice)
+	cout << "Type left and right limits of the area: their dimensionality = " << dbg.func->dim << endl;
+	cout << "left:" << endl;
+	cin >> (*dbg.left_limits);
+	cout << "right:" << endl;
+	cin >> (*dbg.right_limits);
+
+	cout << "Type initial point: its dimensionality = " << dbg.func->dim << endl;
+	cin >> *(dbg.init);
+
+	dbg.area = new Parallelepiped(*(dbg.left_limits), *(dbg.right_limits));
+
+	switch(methodtype())
 	{
 	case 0:
 	{
@@ -165,16 +222,26 @@ int main()
 	}; break;
 	case 1:
 	{
-		res = ((RandomSearch*)dbg.optimizer)->optimize(*(dbg.func), *(dbg.area), 0.7, 0.4, 10000);
+		inputRandomSearchParameters(dbg);
+
+		res = ((RandomSearch*)dbg.optimizer)->optimize(*(dbg.func), *(dbg.area), dbg.prob, dbg.shrinkrate, dbg.maxiterstostay);
 	}; break;
 	}
-	vector<Vector> &traj = res.trajectory;
-	std::cout << res.argmin << std::endl << res.value << std::endl << res.iter << std::endl << std::endl;
-	for (int i = 0; i < min<int>(traj.size(),10) ; ++i)
-	{
-		std::cout << traj[i] << std::endl;
-	}
 
+	cout << dbg.func->stringexpression() << endl;
+	cout << "argmin = " << res.argmin << " , min = " << res.value << " , iters = "<< res.iter << endl;
+
+	/*
+	list<Vector> &traj = res.trajectory;
+	std::cout << res.argmin << std::endl << res.value << std::endl << res.iter << std::endl << std::endl;
+	auto iter = traj.begin();
+	auto end = traj.end();
+
+	for (; iter != end ; ++iter)
+	{
+		std::cout << *iter << std::endl;
+	}
+	*/
 
 	
 
@@ -184,6 +251,8 @@ int main()
 	delete dbg.optimizer;
 	delete dbg.area;
 	delete dbg.init;
+	delete dbg.left_limits;
+	delete dbg.right_limits;
 	return 0;
 }
 

@@ -10,6 +10,8 @@ public:
 
 	virtual double expression(const Vector &x) const = 0;
 
+	virtual const char* stringexpression() const = 0;
+
 	double operator ()(const Vector &x) const { return expression(x); }
 
 	virtual const Vector gradient(const Vector &) const = 0;
